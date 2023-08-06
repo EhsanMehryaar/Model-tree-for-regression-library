@@ -6,8 +6,8 @@ This repository contains code for developing and evaluating regression models us
 
 Model_Tree_for_Regression/
 |-- data/
-|   |-- data_file.csv
-|   |-- data_file.xlsx
+|-- |-- data_file.csv
+|-- |-- data_file.xlsx
 |
 |-- models/
 |   |-- gp_regr.py
