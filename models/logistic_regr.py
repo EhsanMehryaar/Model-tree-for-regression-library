@@ -1,6 +1,3 @@
-"""
- logistic_regr.py  (author: Anson Wong / git: ankonzoid)
-"""
 from sklearn.metrics import mean_squared_error
 from scipy.stats import pearsonr
 import warnings
