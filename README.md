@@ -4,10 +4,10 @@ This repository contains code for developing and evaluating regression models us
 
 ## Project Structure
 
-Model_Tree_for_Regression/
-|-- data/
-|-- |-- data_file.csv
-|-- |-- data_file.xlsx
+Model_Tree_for_Regression/  
+|-- data/  
+|-- |-- data_file.csv  
+|-- |-- data_file.xlsx  
 |
 |-- models/
 |   |-- gp_regr.py
