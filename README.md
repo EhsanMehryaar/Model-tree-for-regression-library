@@ -10,35 +10,35 @@ Model_Tree_for_Regression/
 |-- |-- data_file.xlsx  
 |  
 |-- models/  
-|   |-- gp_regr.py  
-|   |-- lasso_regr.py  
-|   |-- linear_regr.py  
-|   |-- logistic_regr.py  
-|   |-- mean_regr.py  
-|   |-- NN_regr.py  
-|   |-- ridge_regr.py  
-|   |-- rt_regr.py  
-|   |-- svm_regr.py  
+|-- |-- gp_regr.py  
+|-- |-- lasso_regr.py  
+|-- |-- linear_regr.py  
+|-- |-- logistic_regr.py  
+|-- |-- mean_regr.py  
+|-- |-- NN_regr.py  
+|-- |-- ridge_regr.py  
+|-- |-- rt_regr.py  
+|-- |-- svm_regr.py  
 |  
 |-- src/  
-|   |-- ModelTree.py  
-|   |-- utils.py  
+|-- |-- ModelTree.py  
+|-- |-- utils.py  
 |  
 |-- output/  
-|   |-- model_1/  
-|   |   |-- model_1_train.xlsx  
-|   |   |-- model_1_test.xlsx  
-|   |   |-- model_1.pkl  
-|   |-- model_2/  
-|   |   |-- model_2_train.xlsx  
-|   |   |-- model_2_test.xlsx  
-|   |   |-- model_2.pkl  
-|   |-- ...  
+|-- |-- model_1/  
+|-- |-- |-- model_1_train.xlsx  
+|-- |-- |-- model_1_test.xlsx  
+|-- |-- |-- model_1.pkl  
+|-- |-- model_2/  
+|-- |-- |-- model_2_train.xlsx  
+|-- |-- |-- model_2_test.xlsx  
+|-- |-- |-- model_2.pkl  
+|-- |-- ...  
 |  
 |-- notebooks/  
-|   |-- data_exploration.ipynb  
-|   |-- model_evaluation.ipynb  
-|   |-- ...  
+|-- |-- data_exploration.ipynb  
+|-- |-- model_evaluation.ipynb  
+|-- |-- ...  
 |  
 |-- requirements.txt  
 |-- README.md  
