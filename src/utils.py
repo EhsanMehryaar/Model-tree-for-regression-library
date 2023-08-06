@@ -5,32 +5,62 @@ import pandas as pd
 from copy import copy
 import os
 
-
-
+# Function to load data from a CSV file and return features (X), target (y), and header (column names)
 def load_csv_data(input_csv_filename, mode="clf", verbose=False):
-    if verbose:
-        print("Loading data from '{}' (mode={})...".format(input_csv_filename, mode))
-    df = pd.read_csv(input_csv_filename)  # dataframe
-    df_header = df.columns.values  # header
+    """
+    Loads data from a CSV file and returns X, y, and header.
+
+    Args:
+        input_csv_filename (str): The filename of the CSV file.
+        mode (str, optional): The mode of the data. Can be "clf" (classification) or "regr" (regression).
+                              Defaults to "clf".
+        verbose (bool, optional): If True, prints information about the loaded data. Defaults to False.
+
+    Returns:
+        tuple: A tuple containing X (features), y (target), and header (column names).
+    """
+    # Load the CSV file into a Pandas DataFrame
+    df = pd.read_csv(input_csv_filename)
+    # Extract header (column names) from the DataFrame
+    df_header = df.columns.values
     header = list(df_header)
+    # Get the number of rows and columns in the DataFrame
     N, d = len(df), len(df_header) - 1
-    X = np.array(df.drop(['y'], axis=1))  # extract X by dropping y column
-    y = np.array(df['y'])  # extract y
+    # Extract features (X) by dropping the target column 'y'
+    X = np.array(df.drop(['y'], axis=1))
+    # Extract target (y) as a separate array
+    y = np.array(df['y'])
+    # Get the unique classes in the target (for classification mode)
     y_classes = list(set(y))
-    assert X.shape == (N, d)  # check X.shape
-    assert y.shape == (N,)  # check y.shape
+    # Check the shape of X and y to ensure consistency
+    assert X.shape == (N, d)
+    assert y.shape == (N,)
+    # Check the data types of y based on the specified mode
     if mode == "clf":
         assert y.dtype in ['int64']  # check y are integers
     elif mode == "regr":
         assert y.dtype in ['int64', 'float64']  # check y are integers/floats
     else:
         exit("err: invalid mode given!")
+    # Print information about the loaded data if verbose is True
     if verbose:
         print(" header={}\n X.shape={}\n y.shape={}\n len(y_classes)={}\n".format(header, X.shape, y.shape, len(y_classes)))
     return X, y, header
 
+# Function for creating cross-validation folds and performing k-fold cross-validation
 def cross_validate(model, X, y ,kfold=5, seed=1, model_name="non given"):
+    """
+    Performs k-fold cross-validation on a given model and data.
 
+    Args:
+        model (object): The machine learning model to be cross-validated.
+        X (np.array): The features of the dataset.
+        y (np.array): The target variable of the dataset.
+        kfold (int, optional): The number of folds for cross-validation. Defaults to 5.
+        seed (int, optional): The random seed for reproducibility. Defaults to 1.
+        model_name (str, optional): The name of the model used for saving output files. Defaults to "non given".
+    """
+    # Function to create k cross-validation folds from the data indices
     def make_crossval_folds(N, kfold, seed=1):
         np.random.seed(seed)
         idx_all_permute = np.random.permutation(N)
@@ -44,12 +74,13 @@ def cross_validate(model, X, y ,kfold=5, seed=1, model_name="non given"):
 
     N = len(X)
     idx_all = np.arange(0, N)
+    # Create k cross-validation folds
     idx_folds = make_crossval_folds(N, kfold, seed=seed)
     assert len(idx_folds) == kfold
 
     print("\nCross-validating (kfold={}, seed={})...".format(kfold, seed))
     
-    
+    # Initialize variables to store average loss, R^2, and Pearson's correlation coefficients
     loss_train_avg, loss_val_avg = 0.0, 0.0
     r2_train_avg, r2_val_avg = 0.0, 0.0
     pearsonr_train_avg, pearsonr_val_avg = 0, 0
@@ -57,88 +88,78 @@ def cross_validate(model, X, y ,kfold=5, seed=1, model_name="non given"):
     cv_metrics_val = pd.DataFrame(columns=['loss_val', 'r2_val', 'pearsonr_val'])
     cv_fold_preds = pd.DataFrame()
     cv_rest_preds = pd.DataFrame()
-    for i in range(kfold):
 
-        # Split data
+    # Loop through each fold and perform cross-validation
+    for i in range(kfold):
+        # Split data into training and validation sets
         idx_fold = idx_folds[i]
         idx_rest = np.delete(idx_all, idx_fold)
         X_rest, y_rest = X[idx_rest], y[idx_rest]
         X_fold, y_fold = X[idx_fold], y[idx_fold]
 
-        # Train
+        # Create a copy of the model for training on the rest of the data
         model_rest = copy(model)
         model_rest.fit(X_rest, y_rest)
 
-        # Evaluate
+        # Make predictions on training and validation sets
         y_pred_rest = model_rest.predict(X_rest)
         y_pred_fold = model_rest.predict(X_fold)
 
-        # Compute losses
+        # Compute losses (e.g., mean squared error or cross-entropy)
         loss_train = model.loss(X_rest, y_rest)
         loss_val = model.loss(X_fold, y_fold)
 
-        # compute coefficient of corelation
+        # Compute R^2 for training and validation sets
         r2_train = model.r2(X_rest, y_rest)
         r2_val = model.r2(X_fold, y_fold)
 
+        # Compute Pearson's correlation coefficient for training and validation sets
         pearsonr_train = model.pearson(X_rest, y_rest)
         pearsonr_val = model.pearson(X_fold, y_fold)
 
+        # Update average losses and metrics
         loss_train_avg += loss_train
         loss_val_avg += loss_val
-
         r2_train_avg += r2_train
         r2_val_avg += r2_val
-
         pearsonr_train_avg += pearsonr_train
         pearsonr_val_avg += pearsonr_val
 
+        # Store metrics for each fold
         cv_metrics_train = cv_metrics_train.append([[loss_train, r2_train, pearsonr_train]], ignore_index=True)
         cv_metrics_val = cv_metrics_val.append([[loss_val, r2_val, pearsonr_val]], ignore_index=True)
+        
+        # Store predictions for each fold
         cv_fold_preds['fold' + str(i) + ' y'] = y_fold
         cv_fold_preds['fold' + str(i) + ' y_pred'] = y_pred_fold
         cv_rest_preds['fold' + str(i) + ' y'] = y_rest
         cv_rest_preds['fold' + str(i) + ' y_pred'] = y_pred_rest
 
+        # Print results for each fold
         print(" [fold {}/{}] loss_train={:.6}, loss_validation={:.6}".format(i+1, kfold, loss_train, loss_val))
-        print(" [fold {}/{}] r2_train={:.6}, r2_validation={:.6}".format(i+1, kfold, r2_train, r2_val))
-        print(" [fold {}/{}] pearson_train={:.6}, pearson_validation={:.6}".format(i+1, kfold, pearsonr_train, pearsonr_val))
-        
-    
-    # saving files
-    # make sure the path exists
-    check_folder_exist('output', model_name)
-    path = os.path.join('output', model_name)
 
-    address = os.path.join(path, 'cv_metrics_train.xlsx')
-    cv_metrics_train.to_excel(address)
-
-    address = os.path.join(path, 'cv_metrics_val.xlsx')
-    cv_metrics_val.to_excel(address)
-
-
-    address = os.path.join(path, 'cv_fold_preds.xlsx')
-    cv_fold_preds.to_excel(address)
-
-    address = os.path.join(path, 'cv_rest_preds.xlsx')
-    cv_rest_preds.to_excel(address)
-
+    # Calculate average metrics and losses over all folds
     loss_train_avg /= kfold
     loss_val_avg /= kfold
-
     r2_train_avg /= kfold
     r2_val_avg /= kfold
-
     pearsonr_train_avg /= kfold
     pearsonr_val_avg /= kfold
 
+    # Store average metrics in a DataFrame
+    cv_metrics_train.loc['Average'] = [loss_train_avg, r2_train_avg, pearsonr_train_avg]
+    cv_metrics_val.loc['Average'] = [loss_val_avg, r2_val_avg, pearsonr_val_avg]
+    
+    # Save the metrics to CSV files
+    cv_metrics_train.to_csv(model_name + "_metrics_train.csv")
+    cv_metrics_val.to_csv(model_name + "_metrics_val.csv")
+    cv_fold_preds.to_csv(model_name + "_fold_preds.csv")
+    cv_rest_preds.to_csv(model_name + "_rest_preds.csv")
 
-
-    print("\n  -> loss_train_avg={:.6f}, loss_validation_avg={:.6f}".format(loss_train_avg, loss_val_avg))
-    print("  -> r2_train_avg={:.6f}, r2_validation_avg={:.6f}".format(r2_train_avg, r2_val_avg))
-    print("  -> pearson_train_avg={:.6f}, pearson_validation_avg={:.6f}".format(pearsonr_train_avg, pearsonr_val_avg))
-
-    return 
+    # Print average results
+    print("\nAverage metrics for {}-fold cross-validation (seed={}):".format(kfold, seed))
+    print(" loss_train_avg={:.6}, loss_val_avg={:.6}, r2_train_avg={:.6}, r2_val_avg={:.6}, pearsonr_train_avg={:.6}, pearsonr_val_avg={:.6}".format(
+        loss_train_avg, loss_val_avg, r2_train_avg, r2_val_avg, pearsonr_train_avg, pearsonr_val_avg))
 
 # function for reading data from a excel file in a data folder
 def read_data(file_name: str, format: str, index: bool =False) -> pd.DataFrame:
@@ -419,3 +440,30 @@ def SmoteR(D, target, th = 0.999, o = 1000, u = 100, k = 3, categorical_col = []
     new_D = pd.concat([new_cases, norm_cases], axis=0)
     
     return new_D
+
+def sensitivity_analysis(model:object, X_train:np.array):
+    # function to give a np.array of the sensitivity of each feature
+    changes = list(range(-50, 51, 10))
+    y = model.predict(X_train)
+    results = []
+    for i in range(X_train.shape[1]):
+        results.append([])
+        for j in changes:
+            X_train_copy = X_train.copy()
+            X_train_copy[:, i] = X_train_copy[:, i] * (1 + j/100)
+            y_pred = model.predict(X_train_copy)
+            # average of y_pred numpy array
+            results[i].append(((y_pred - y).mean()) / y.mean() * 100)
+    return results
+
+def uncertainty_analysis (model:object, X:np.array, y:np.array) -> None:
+    # function to give a np.array of the uncertainty of each feature
+    y_pred = model.predict(X)
+
+    err = y - y_pred
+    err_mean = err.mean()
+    err_std = err.std()
+    print(f'mean error is {err_mean}')
+    print(f'95% uncertainty bandwidth is {1.96 * err_std}')
+    print(f'95% interval starts from {err_mean - 1.96 * err_std} and ends at {err_mean + 1.96 * err_std}')
+    return 
